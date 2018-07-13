@@ -1096,9 +1096,9 @@ rollup@0.49.3:
   version "0.49.3"
   resolved "https://registry.yarnpkg.com/rollup/-/rollup-0.49.3.tgz#4cce32643dd8cf2154c69ff0e43470067db0adbf"
 
-rxjs-compat@6.0.0:
-  version "6.0.0"
-  resolved "https://registry.yarnpkg.com/rxjs-compat/-/rxjs-compat-6.0.0.tgz#2496403f74042d07899faeeac0bd703e4bce6710"
+rxjs-compat@6.2.2:
+  version "6.2.2"
+  resolved "https://registry.yarnpkg.com/rxjs-compat/-/rxjs-compat-6.2.2.tgz#3c0fcdb46130cc70aa55412c2b1147905ab4680a"
 
 rxjs@6.0.0:
   version "6.0.0"
