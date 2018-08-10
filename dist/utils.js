@@ -1,11 +1,12 @@
 export var subscribeEvents = ['onReady', 'onError', 'onStop'];
+var isFunction = function (func) { return typeof func === 'function'; };
 export function isMeteorCallbacks(callbacks) {
-    return _.isFunction(callbacks) || isCallbacksObject(callbacks);
+    return isFunction(callbacks) || isCallbacksObject(callbacks);
 }
 // Checks if callbacks of {@link CallbacksObject} type.
 export function isCallbacksObject(callbacks) {
     return callbacks && subscribeEvents.some(function (event) {
-        return _.isFunction(callbacks[event]);
+        return isFunction(callbacks[event]);
     });
 }
 export var g = typeof global === 'object' ? global :

@@ -40,7 +40,11 @@ var ObservableCursor = /** @class */ (function (_super) {
         _this._observers = [];
         _this._countObserver = new Subject();
         _this._isDataInitinialized = false;
-        _.extend(_this, _.omit(cursor, 'count', 'map'));
+        var self = _this;
+        self.fetch = cursor.fetch;
+        self.forEach = cursor.forEach;
+        self.observe = cursor.observe;
+        self.observeChanges = cursor.observeChanges;
         _this._cursor = cursor;
         _this._zone = forkZone();
         return _this;

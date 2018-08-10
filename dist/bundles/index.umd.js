@@ -5,13 +5,14 @@
 }(this, (function (exports,rxjs) { 'use strict';
 
 var subscribeEvents = ['onReady', 'onError', 'onStop'];
+var isFunction = function (func) { return typeof func === 'function'; };
 function isMeteorCallbacks(callbacks) {
-    return _.isFunction(callbacks) || isCallbacksObject(callbacks);
+    return isFunction(callbacks) || isCallbacksObject(callbacks);
 }
 // Checks if callbacks of {@link CallbacksObject} type.
 function isCallbacksObject(callbacks) {
     return callbacks && subscribeEvents.some(function (event) {
-        return _.isFunction(callbacks[event]);
+        return isFunction(callbacks[event]);
     });
 }
 var g = typeof global === 'object' ? global :
@@ -95,7 +96,11 @@ var ObservableCursor = /** @class */ (function (_super) {
         _this._observers = [];
         _this._countObserver = new rxjs.Subject();
         _this._isDataInitinialized = false;
-        _.extend(_this, _.omit(cursor, 'count', 'map'));
+        var self = _this;
+        self.fetch = cursor.fetch;
+        self.forEach = cursor.forEach;
+        self.observe = cursor.observe;
+        self.observeChanges = cursor.observeChanges;
         _this._cursor = cursor;
         _this._zone = forkZone();
         return _this;
