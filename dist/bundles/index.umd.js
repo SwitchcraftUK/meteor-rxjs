@@ -85,11 +85,11 @@ class ObservableCursor extends rxjs.Observable {
         this._observers = [];
         this._countObserver = new rxjs.Subject();
         this._isDataInitinialized = false;
-        const self = this;
-        self.fetch = cursor.fetch;
-        self.forEach = cursor.forEach;
-        self.observe = cursor.observe;
-        self.observeChanges = cursor.observeChanges;
+        for (const key in cursor) {
+            if (key !== 'count' && key !== 'map') {
+                this[key] = cursor[key];
+            }
+        }
         this._cursor = cursor;
         this._zone = forkZone();
     }
