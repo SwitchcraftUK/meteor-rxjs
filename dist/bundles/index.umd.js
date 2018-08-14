@@ -4,33 +4,33 @@
 	(factory((global.meteor = global.meteor || {}, global.meteor.rxjs = {}),global.rxjs));
 }(this, (function (exports,rxjs) { 'use strict';
 
-var subscribeEvents = ['onReady', 'onError', 'onStop'];
-var isFunction = function (func) { return typeof func === 'function'; };
+const subscribeEvents = ['onReady', 'onError', 'onStop'];
+const isFunction = (func) => typeof func === 'function';
 function isMeteorCallbacks(callbacks) {
     return isFunction(callbacks) || isCallbacksObject(callbacks);
 }
 // Checks if callbacks of {@link CallbacksObject} type.
 function isCallbacksObject(callbacks) {
-    return callbacks && subscribeEvents.some(function (event) {
+    return callbacks && subscribeEvents.some((event) => {
         return isFunction(callbacks[event]);
     });
 }
-var g = typeof global === 'object' ? global :
+const g = typeof global === 'object' ? global :
     typeof window === 'object' ? window :
         typeof self === 'object' ? self : undefined;
-var METEOR_RXJS_ZONE = 'meteor-rxjs-zone';
-var fakeZone = {
+const METEOR_RXJS_ZONE = 'meteor-rxjs-zone';
+const fakeZone = {
     name: METEOR_RXJS_ZONE,
-    run: function (func) {
+    run(func) {
         return func();
     },
-    fork: function (spec) {
+    fork(spec) {
         return fakeZone;
     }
 };
 function forkZone() {
     if (g.Zone) {
-        var zone = g.Zone.current;
+        let zone = g.Zone.current;
         if (zone.name === METEOR_RXJS_ZONE) {
             zone = zone.parent || fakeZone;
         }
@@ -40,7 +40,7 @@ function forkZone() {
 }
 function getZone() {
     if (g.Zone) {
-        var zone = g.Zone.current;
+        let zone = g.Zone.current;
         if (zone.name === METEOR_RXJS_ZONE) {
             return zone.parent;
         }
@@ -48,62 +48,50 @@ function getZone() {
     }
 }
 function removeObserver(observers, observer, onEmpty) {
-    var index = observers.indexOf(observer);
+    let index = observers.indexOf(observer);
     observers.splice(index, 1);
     if (observers.length === 0 && onEmpty) {
         onEmpty();
     }
 }
-var gZone = g.Zone ? g.Zone.current : fakeZone;
+const gZone = g.Zone ? g.Zone.current : fakeZone;
 
-var __extends = (undefined && undefined.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
-var ObservableCursor = /** @class */ (function (_super) {
-    __extends(ObservableCursor, _super);
+class ObservableCursor extends rxjs.Observable {
     /**
      * @constructor
      * @extends Observable
      * @param {Mongo.Cursor<T>} cursor - The Mongo.Cursor to wrap.
      */
-    function ObservableCursor(cursor) {
-        var _this = _super.call(this, function (observer) {
-            _this._observers.push(observer);
-            if (!_this._hCursor) {
-                _this._hCursor = _this._observeCursor(cursor);
+    constructor(cursor) {
+        super((observer) => {
+            this._observers.push(observer);
+            if (!this._hCursor) {
+                this._hCursor = this._observeCursor(cursor);
             }
-            Meteor.setTimeout(function () {
-                if (_this._isDataInitinialized) {
-                    observer.next(_this._data);
+            Meteor.setTimeout(() => {
+                if (this._isDataInitinialized) {
+                    observer.next(this._data);
                 }
                 else if (cursor.count() === 0) {
-                    _this._isDataInitinialized = true;
-                    observer.next(_this._data);
+                    this._isDataInitinialized = true;
+                    observer.next(this._data);
                 }
             }, 0);
-            return function () {
-                removeObserver(_this._observers, observer, function () { return _this.stop(); });
+            return () => {
+                removeObserver(this._observers, observer, () => this.stop());
             };
-        }) || this;
-        _this._data = [];
-        _this._observers = [];
-        _this._countObserver = new rxjs.Subject();
-        _this._isDataInitinialized = false;
-        var self = _this;
+        });
+        this._data = [];
+        this._observers = [];
+        this._countObserver = new rxjs.Subject();
+        this._isDataInitinialized = false;
+        const self = this;
         self.fetch = cursor.fetch;
         self.forEach = cursor.forEach;
         self.observe = cursor.observe;
         self.observeChanges = cursor.observeChanges;
-        _this._cursor = cursor;
-        _this._zone = forkZone();
-        return _this;
+        this._cursor = cursor;
+        this._zone = forkZone();
     }
     /**
      *  Static method which creates an ObservableCursor from Mongo.Cursor.
@@ -114,20 +102,16 @@ var ObservableCursor = /** @class */ (function (_super) {
      *  @static
      *  @returns {ObservableCursor} Wrapped Cursor.
      */
-    ObservableCursor.create = function (cursor) {
+    static create(cursor) {
         return new ObservableCursor(cursor);
-    };
-    Object.defineProperty(ObservableCursor.prototype, "cursor", {
-        /**
-         * Returns the actual Mongo.Cursor that wrapped by current ObservableCursor instance.
-         * @return {Mongo.Cursor<T>} The actual MongoDB Cursor.
-         */
-        get: function () {
-            return this._cursor;
-        },
-        enumerable: true,
-        configurable: true
-    });
+    }
+    /**
+     * Returns the actual Mongo.Cursor that wrapped by current ObservableCursor instance.
+     * @return {Mongo.Cursor<T>} The actual MongoDB Cursor.
+     */
+    get cursor() {
+        return this._cursor;
+    }
     /**
      * A wrapper for Mongo.Cursor.count() method - returns an Observable of number, which
      * triggers each time there is a change in the collection, and exposes the number of
@@ -135,103 +119,99 @@ var ObservableCursor = /** @class */ (function (_super) {
      * @returns {Observable} Observable which trigger the callback when the
      * count of the object changes.
      */
-    ObservableCursor.prototype.collectionCount = function () {
+    collectionCount() {
         return this._countObserver.asObservable();
-    };
+    }
     /**
      * Stops the observation on the cursor.
      */
-    ObservableCursor.prototype.stop = function () {
-        var _this = this;
-        this._zone.run(function () {
-            _this._runComplete();
+    stop() {
+        this._zone.run(() => {
+            this._runComplete();
         });
         if (this._hCursor) {
             this._hCursor.stop();
         }
         this._data = [];
         this._hCursor = null;
-    };
+    }
     /**
      * Clears the Observable definition.
      * Use this method only when the Observable is still cold, and there are no active subscriptions yet.
      */
-    ObservableCursor.prototype.dispose = function () {
+    dispose() {
         this._observers = null;
         this._cursor = null;
-    };
+    }
     /**
      * Return all matching documents as an Array.
      *
      * @return {Array<T>} The array with the matching documents.
      */
-    ObservableCursor.prototype.fetch = function () {
+    fetch() {
         return this._cursor.fetch();
-    };
+    }
     /**
      * Watch a query. Receive callbacks as the result set changes.
      * @param {Mongo.ObserveCallbacks} callbacks - The callbacks object.
      * @return {Meteor.LiveQueryHandle} The array with the matching documents.
      */
-    ObservableCursor.prototype.observe = function (callbacks) {
+    observe(callbacks) {
         return this._cursor.observe(callbacks);
-    };
+    }
     /**
      * Watch a query. Receive callbacks as the result set changes.
      * Only the differences between the old and new documents are passed to the callbacks.
      * @param {Mongo.ObserveChangesCallbacks} callbacks - The callbacks object.
      * @return {Meteor.LiveQueryHandle} The array with the matching documents.
      */
-    ObservableCursor.prototype.observeChanges = function (callbacks) {
+    observeChanges(callbacks) {
         return this._cursor.observeChanges(callbacks);
-    };
-    ObservableCursor.prototype._runComplete = function () {
+    }
+    _runComplete() {
         this._countObserver.complete();
-        this._observers.forEach(function (observer) {
+        this._observers.forEach(observer => {
             observer.complete();
         });
-    };
-    ObservableCursor.prototype._runNext = function (data) {
+    }
+    _runNext(data) {
         this._countObserver.next(this._data.length);
-        this._observers.forEach(function (observer) {
+        this._observers.forEach(observer => {
             observer.next(data);
         });
-    };
-    ObservableCursor.prototype._addedAt = function (doc, at, before) {
+    }
+    _addedAt(doc, at, before) {
         this._data.splice(at, 0, doc);
         this._handleChange();
-    };
-    ObservableCursor.prototype._changedAt = function (doc, old, at) {
+    }
+    _changedAt(doc, old, at) {
         this._data[at] = doc;
         this._handleChange();
-    };
-    ObservableCursor.prototype._removedAt = function (doc, at) {
+    }
+    _removedAt(doc, at) {
         this._data.splice(at, 1);
         this._handleChange();
-    };
-    ObservableCursor.prototype._movedTo = function (doc, fromIndex, toIndex) {
+    }
+    _movedTo(doc, fromIndex, toIndex) {
         this._data.splice(fromIndex, 1);
         this._data.splice(toIndex, 0, doc);
         this._handleChange();
-    };
-    ObservableCursor.prototype._handleChange = function () {
-        var _this = this;
+    }
+    _handleChange() {
         this._isDataInitinialized = true;
-        this._zone.run(function () {
-            _this._runNext(_this._data);
+        this._zone.run(() => {
+            this._runNext(this._data);
         });
-    };
-    ObservableCursor.prototype._observeCursor = function (cursor) {
-        var _this = this;
-        return gZone.run(function () { return cursor.observe({
-            addedAt: _this._addedAt.bind(_this),
-            changedAt: _this._changedAt.bind(_this),
-            movedTo: _this._movedTo.bind(_this),
-            removedAt: _this._removedAt.bind(_this)
-        }); });
-    };
-    return ObservableCursor;
-}(rxjs.Observable));
+    }
+    _observeCursor(cursor) {
+        return gZone.run(() => cursor.observe({
+            addedAt: this._addedAt.bind(this),
+            changedAt: this._changedAt.bind(this),
+            movedTo: this._movedTo.bind(this),
+            removedAt: this._removedAt.bind(this)
+        }));
+    }
+}
 
 (function (MongoObservable) {
     'use strict';
@@ -254,7 +234,7 @@ var ObservableCursor = /** @class */ (function (_super) {
      *
      * T is a generic type - should be used with the type of the objects inside the collection.
      */
-    var Collection = /** @class */ (function () {
+    class Collection {
         /**
          *  Creates a new Mongo.Collection instance wrapped with Observable features.
          *  @param {String | Mongo.Collection} nameOrExisting - The name of the collection. If null, creates an
@@ -263,7 +243,7 @@ var ObservableCursor = /** @class */ (function (_super) {
          *  @param {ConstructorOptions} options - Creation options.
          *  @constructor
          */
-        function Collection(nameOrExisting, options) {
+        constructor(nameOrExisting, options) {
             if (nameOrExisting instanceof Mongo.Collection) {
                 this._collection = nameOrExisting;
             }
@@ -271,33 +251,29 @@ var ObservableCursor = /** @class */ (function (_super) {
                 this._collection = new Mongo.Collection(nameOrExisting, options);
             }
         }
-        Object.defineProperty(Collection.prototype, "collection", {
-            /**
-             *  Returns the Mongo.Collection object that wrapped with the MongoObservable.Collection.
-             *  @returns {Mongo.Collection<T>} The Collection instance
-             */
-            get: function () {
-                return this._collection;
-            },
-            enumerable: true,
-            configurable: true
-        });
+        /**
+         *  Returns the Mongo.Collection object that wrapped with the MongoObservable.Collection.
+         *  @returns {Mongo.Collection<T>} The Collection instance
+         */
+        get collection() {
+            return this._collection;
+        }
         /**
          *  Allow users to write directly to this collection from client code, subject to limitations you define.
          *
          *  @returns {Boolean}
          */
-        Collection.prototype.allow = function (options) {
+        allow(options) {
             return this._collection.allow(options);
-        };
+        }
         /**
          *  Override allow rules.
          *
          *  @returns {Boolean}
          */
-        Collection.prototype.deny = function (options) {
+        deny(options) {
             return this._collection.deny(options);
-        };
+        }
         /**
          *  Returns the Collection object corresponding to this collection from the npm
          *  mongodb driver module which is wrapped by Mongo.Collection.
@@ -306,9 +282,9 @@ var ObservableCursor = /** @class */ (function (_super) {
          *
          * @see {@link https://docs.meteor.com/api/collections.html#Mongo-Collection-rawCollection|rawCollection on Meteor documentation}
          */
-        Collection.prototype.rawCollection = function () {
+        rawCollection() {
             return this._collection.rawCollection();
-        };
+        }
         /**
          *  Returns the Db object corresponding to this collection's database connection from the
          *  npm mongodb driver module which is wrapped by Mongo.Collection.
@@ -317,9 +293,9 @@ var ObservableCursor = /** @class */ (function (_super) {
          *
          * @see {@link https://docs.meteor.com/api/collections.html#Mongo-Collection-rawDatabase|rawDatabase on Meteor documentation}
          */
-        Collection.prototype.rawDatabase = function () {
+        rawDatabase() {
             return this._collection.rawDatabase();
-        };
+        }
         /**
          *  Insert a document in the collection.
          *
@@ -329,18 +305,18 @@ var ObservableCursor = /** @class */ (function (_super) {
          *
          * @see {@link https://docs.meteor.com/api/collections.html#Mongo-Collection-insert|insert on Meteor documentation}
          */
-        Collection.prototype.insert = function (doc) {
-            var observers = [];
-            var obs = this._createObservable(observers);
-            this._collection.insert(doc, function (error, docId) {
-                observers.forEach(function (observer) {
+        insert(doc) {
+            let observers = [];
+            let obs = this._createObservable(observers);
+            this._collection.insert(doc, (error, docId) => {
+                observers.forEach(observer => {
                     error ? observer.error(error) :
                         observer.next(docId);
                     observer.complete();
                 });
             });
             return obs;
-        };
+        }
         /**
          *  Remove documents from the collection.
          *
@@ -349,18 +325,18 @@ var ObservableCursor = /** @class */ (function (_super) {
          *
          * @see {@link https://docs.meteor.com/api/collections.html#Mongo-Collection-remove|remove on Meteor documentation}
          */
-        Collection.prototype.remove = function (selector) {
-            var observers = [];
-            var obs = this._createObservable(observers);
-            this._collection.remove(selector, function (error, removed) {
-                observers.forEach(function (observer) {
+        remove(selector) {
+            let observers = [];
+            let obs = this._createObservable(observers);
+            this._collection.remove(selector, (error, removed) => {
+                observers.forEach(observer => {
                     error ? observer.error(error) :
                         observer.next(removed);
                     observer.complete();
                 });
             });
             return obs;
-        };
+        }
         /**
          *  Modify one or more documents in the collection.
          *
@@ -372,18 +348,18 @@ var ObservableCursor = /** @class */ (function (_super) {
          *
          * @see {@link https://docs.meteor.com/api/collections.html#Mongo-Collection-update|update on Meteor documentation}
          */
-        Collection.prototype.update = function (selector, modifier, options) {
-            var observers = [];
-            var obs = this._createObservable(observers);
-            this._collection.update(selector, modifier, options, function (error, updated) {
-                observers.forEach(function (observer) {
+        update(selector, modifier, options) {
+            let observers = [];
+            let obs = this._createObservable(observers);
+            this._collection.update(selector, modifier, options, (error, updated) => {
+                observers.forEach(observer => {
                     error ? observer.error(error) :
                         observer.next(updated);
                     observer.complete();
                 });
             });
             return obs;
-        };
+        }
         /**
          *  Finds the first document that matches the selector, as ordered by sort and skip options.
          *
@@ -396,18 +372,18 @@ var ObservableCursor = /** @class */ (function (_super) {
          *
          * @see {@link https://docs.meteor.com/api/collections.html#Mongo-Collection-upsert|upsert on Meteor documentation}
          */
-        Collection.prototype.upsert = function (selector, modifier, options) {
-            var observers = [];
-            var obs = this._createObservable(observers);
-            this._collection.upsert(selector, modifier, options, function (error, affected) {
-                observers.forEach(function (observer) {
+        upsert(selector, modifier, options) {
+            let observers = [];
+            let obs = this._createObservable(observers);
+            this._collection.upsert(selector, modifier, options, (error, affected) => {
+                observers.forEach(observer => {
                     error ? observer.error(error) :
                         observer.next(affected);
                     observer.complete();
                 });
             });
             return obs;
-        };
+        }
         /**
          *  Method has the same notation as Mongo.Collection.find, only returns Observable.
          *
@@ -427,10 +403,10 @@ var ObservableCursor = /** @class */ (function (_super) {
          *
          * @see {@link https://docs.meteor.com/api/collections.html#Mongo-Collection-find|find on Meteor documentation}
          */
-        Collection.prototype.find = function (selector, options) {
-            var cursor = this._collection.find.apply(this._collection, arguments);
+        find(selector, options) {
+            const cursor = this._collection.find.apply(this._collection, arguments);
             return ObservableCursor.create(cursor);
-        };
+        }
         /**
          *  Finds the first document that matches the selector, as ordered by sort and skip options.
          *
@@ -440,19 +416,18 @@ var ObservableCursor = /** @class */ (function (_super) {
          *
          * @see {@link https://docs.meteor.com/api/collections.html#Mongo-Collection-findOne|findOne on Meteor documentation}
          */
-        Collection.prototype.findOne = function (selector, options) {
+        findOne(selector, options) {
             return this._collection.findOne.apply(this._collection, arguments);
-        };
-        Collection.prototype._createObservable = function (observers) {
-            return rxjs.Observable.create(function (observer) {
+        }
+        _createObservable(observers) {
+            return rxjs.Observable.create((observer) => {
                 observers.push(observer);
-                return function () {
+                return () => {
                     removeObserver(observers, observer);
                 };
             });
-        };
-        return Collection;
-    }());
+        }
+    }
     MongoObservable.Collection = Collection;
 })(exports.MongoObservable || (exports.MongoObservable = {}));
 /**
@@ -481,9 +456,11 @@ var ObservableCursor = /** @class */ (function (_super) {
  * @property {Boolean} upsert - True to use upsert logic.
  */
 
-var liveSubscriptions = [];
+let liveSubscriptions = [];
 function throwInvalidCallback(method) {
-    throw new Error("Invalid " + method + " arguments:\n     your last param can't be a callback function,\n     please remove it and use \".subscribe\" of the Observable!");
+    throw new Error(`Invalid ${method} arguments:
+     your last param can't be a callback function,
+     please remove it and use ".subscribe" of the Observable!`);
 }
 /**
  * This is a class with static methods that wrap Meteor's API and return RxJS
@@ -495,9 +472,7 @@ function throwInvalidCallback(method) {
  * [Meteor.autorun](https://docs.meteor.com/api/tracker.html#Tracker-autorun)
  * and [Meteor.subscribe](https://docs.meteor.com/api/pubsub.html#Meteor-subscribe).
  */
-var MeteorObservable = /** @class */ (function () {
-    function MeteorObservable() {
-    }
+class MeteorObservable {
     /**
      * Invokes a [Meteor Method](https://docs.meteor.com/api/methods.html)
      * defined on the server, passing any number of arguments. This method has
@@ -528,28 +503,24 @@ var MeteorObservable = /** @class */ (function () {
      *     }
      *  }
      */
-    MeteorObservable.call = function (name) {
-        var args = [];
-        for (var _i = 1; _i < arguments.length; _i++) {
-            args[_i - 1] = arguments[_i];
-        }
-        var lastParam = args[args.length - 1];
+    static call(name, ...args) {
+        const lastParam = args[args.length - 1];
         if (isMeteorCallbacks(lastParam)) {
             throwInvalidCallback('MeteorObservable.call');
         }
-        var zone = forkZone();
-        return rxjs.Observable.create(function (observer) {
-            Meteor.call.apply(Meteor, [name].concat(args.concat([
-                function (error, result) {
-                    zone.run(function () {
+        let zone = forkZone();
+        return rxjs.Observable.create((observer) => {
+            Meteor.call(name, ...args.concat([
+                (error, result) => {
+                    zone.run(() => {
                         error ? observer.error(error) :
                             observer.next(result);
                         observer.complete();
                     });
                 }
-            ])));
+            ]));
         });
-    };
+    }
     /**
      * When you subscribe to a collection, it tells the server to send records to
      * the client. This method has the same signature as
@@ -606,39 +577,35 @@ var MeteorObservable = /** @class */ (function () {
      *
      *  @see {@link http://docs.meteor.com/api/pubsub.html|Publications in Meteor documentation}
      */
-    MeteorObservable.subscribe = function (name) {
-        var args = [];
-        for (var _i = 1; _i < arguments.length; _i++) {
-            args[_i - 1] = arguments[_i];
-        }
-        var lastParam = args[args.length - 1];
+    static subscribe(name, ...args) {
+        let lastParam = args[args.length - 1];
         if (isMeteorCallbacks(lastParam)) {
             throwInvalidCallback('MeteorObservable.subscribe');
         }
-        var zone = forkZone();
-        var observers = [];
-        var subscribe = function () {
-            return Meteor.subscribe.apply(Meteor, [name].concat(args.concat([{
-                    onError: function (error) {
-                        zone.run(function () {
-                            observers.forEach(function (observer) { return observer.error(error); });
+        let zone = forkZone();
+        let observers = [];
+        let subscribe = () => {
+            return Meteor.subscribe(name, ...args.concat([{
+                    onError: (error) => {
+                        zone.run(() => {
+                            observers.forEach(observer => observer.error(error));
                         });
                     },
-                    onReady: function () {
-                        zone.run(function () {
-                            observers.forEach(function (observer) { return observer.next(); });
+                    onReady: () => {
+                        zone.run(() => {
+                            observers.forEach(observer => observer.next());
                         });
                     }
                 }
-            ])));
+            ]));
         };
-        var subHandler = null;
-        return rxjs.Observable.create(function (observer) {
+        let subHandler = null;
+        return rxjs.Observable.create((observer) => {
             observers.push(observer);
             // Execute subscribe lazily.
             if (subHandler === null) {
                 subHandler = subscribe();
-                if (liveSubscriptions.find(function (sub) { return sub === subHandler.subscriptionId; })) {
+                if (liveSubscriptions.find(sub => sub === subHandler.subscriptionId)) {
                     // subscription already exists, call observer.next() since Meteor won't.
                     observer.next();
                 }
@@ -646,10 +613,10 @@ var MeteorObservable = /** @class */ (function () {
                     liveSubscriptions.push(subHandler.subscriptionId);
                 }
             }
-            return function () {
-                removeObserver(observers, observer, function () {
+            return () => {
+                removeObserver(observers, observer, () => {
                     // remove subscription from liveSubscriptions list
-                    var i = liveSubscriptions.findIndex(function (sub) { return sub === subHandler.subscriptionId; });
+                    let i = liveSubscriptions.findIndex(sub => sub === subHandler.subscriptionId);
                     if (i > -1) {
                         liveSubscriptions.splice(i, 1);
                     }
@@ -657,7 +624,7 @@ var MeteorObservable = /** @class */ (function () {
                 });
             };
         });
-    };
+    }
     /**
      * Allows you to run a function every time there is a change is a reactive
      * data sources. This method has the same signature as
@@ -680,78 +647,60 @@ var MeteorObservable = /** @class */ (function () {
      *     }
      *  }
      */
-    MeteorObservable.autorun = function () {
-        var zone = forkZone();
-        var observers = [];
-        var autorun = function () {
-            return Tracker.autorun(function (computation) {
-                zone.run(function () {
-                    observers.forEach(function (observer) { return observer.next(computation); });
+    static autorun() {
+        let zone = forkZone();
+        let observers = [];
+        let autorun = () => {
+            return Tracker.autorun((computation) => {
+                zone.run(() => {
+                    observers.forEach(observer => observer.next(computation));
                 });
             });
         };
-        var handler = null;
-        return rxjs.Observable.create(function (observer) {
+        let handler = null;
+        return rxjs.Observable.create((observer) => {
             observers.push(observer);
             // Execute autorun lazily.
             if (handler === null) {
                 handler = autorun();
             }
-            return function () {
-                removeObserver(observers, observer, function () { return handler.stop(); });
+            return () => {
+                removeObserver(observers, observer, () => handler.stop());
             };
         });
-    };
-    return MeteorObservable;
-}());
+    }
+}
 
-var __extends$1 = (undefined && undefined.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
-var zoneOperator = function (zone) { return function (source) { return source.lift(new ZoneOperator(zone || getZone())); }; };
-var ZoneOperator = /** @class */ (function () {
-    function ZoneOperator(zone) {
+const zoneOperator = (zone) => (source) => source.lift(new ZoneOperator(zone || getZone()));
+class ZoneOperator {
+    constructor(zone) {
         this.zone = zone;
     }
-    ZoneOperator.prototype.call = function (subscriber, source) {
+    call(subscriber, source) {
         return source._subscribe(new ZoneSubscriber(subscriber, this.zone));
-    };
-    return ZoneOperator;
-}());
-var ZoneSubscriber = /** @class */ (function (_super) {
-    __extends$1(ZoneSubscriber, _super);
-    function ZoneSubscriber(destination, zone) {
-        var _this = _super.call(this, destination) || this;
-        _this.zone = zone;
-        return _this;
     }
-    ZoneSubscriber.prototype._next = function (value) {
-        var _this = this;
-        this.zone.run(function () {
-            _this.destination.next(value);
+}
+class ZoneSubscriber extends rxjs.Subscriber {
+    constructor(destination, zone) {
+        super(destination);
+        this.zone = zone;
+    }
+    _next(value) {
+        this.zone.run(() => {
+            this.destination.next(value);
         });
-    };
-    ZoneSubscriber.prototype._complete = function () {
-        var _this = this;
-        this.zone.run(function () {
-            _this.destination.complete();
+    }
+    _complete() {
+        this.zone.run(() => {
+            this.destination.complete();
         });
-    };
-    ZoneSubscriber.prototype._error = function (err) {
-        var _this = this;
-        this.zone.run(function () {
-            _this.destination.error(err);
+    }
+    _error(err) {
+        this.zone.run(() => {
+            this.destination.error(err);
         });
-    };
-    return ZoneSubscriber;
-}(rxjs.Subscriber));
+    }
+}
 
 exports.MeteorObservable = MeteorObservable;
 exports.ObservableCursor = ObservableCursor;
