@@ -23,7 +23,7 @@ export var MongoObservable;
      *
      * T is a generic type - should be used with the type of the objects inside the collection.
      */
-    class Collection {
+    var Collection = /** @class */ (function () {
         /**
          *  Creates a new Mongo.Collection instance wrapped with Observable features.
          *  @param {String | Mongo.Collection} nameOrExisting - The name of the collection. If null, creates an
@@ -32,7 +32,7 @@ export var MongoObservable;
          *  @param {ConstructorOptions} options - Creation options.
          *  @constructor
          */
-        constructor(nameOrExisting, options) {
+        function Collection(nameOrExisting, options) {
             if (nameOrExisting instanceof Mongo.Collection) {
                 this._collection = nameOrExisting;
             }
@@ -40,29 +40,33 @@ export var MongoObservable;
                 this._collection = new Mongo.Collection(nameOrExisting, options);
             }
         }
-        /**
-         *  Returns the Mongo.Collection object that wrapped with the MongoObservable.Collection.
-         *  @returns {Mongo.Collection<T>} The Collection instance
-         */
-        get collection() {
-            return this._collection;
-        }
+        Object.defineProperty(Collection.prototype, "collection", {
+            /**
+             *  Returns the Mongo.Collection object that wrapped with the MongoObservable.Collection.
+             *  @returns {Mongo.Collection<T>} The Collection instance
+             */
+            get: function () {
+                return this._collection;
+            },
+            enumerable: true,
+            configurable: true
+        });
         /**
          *  Allow users to write directly to this collection from client code, subject to limitations you define.
          *
          *  @returns {Boolean}
          */
-        allow(options) {
+        Collection.prototype.allow = function (options) {
             return this._collection.allow(options);
-        }
+        };
         /**
          *  Override allow rules.
          *
          *  @returns {Boolean}
          */
-        deny(options) {
+        Collection.prototype.deny = function (options) {
             return this._collection.deny(options);
-        }
+        };
         /**
          *  Returns the Collection object corresponding to this collection from the npm
          *  mongodb driver module which is wrapped by Mongo.Collection.
@@ -71,9 +75,9 @@ export var MongoObservable;
          *
          * @see {@link https://docs.meteor.com/api/collections.html#Mongo-Collection-rawCollection|rawCollection on Meteor documentation}
          */
-        rawCollection() {
+        Collection.prototype.rawCollection = function () {
             return this._collection.rawCollection();
-        }
+        };
         /**
          *  Returns the Db object corresponding to this collection's database connection from the
          *  npm mongodb driver module which is wrapped by Mongo.Collection.
@@ -82,9 +86,9 @@ export var MongoObservable;
          *
          * @see {@link https://docs.meteor.com/api/collections.html#Mongo-Collection-rawDatabase|rawDatabase on Meteor documentation}
          */
-        rawDatabase() {
+        Collection.prototype.rawDatabase = function () {
             return this._collection.rawDatabase();
-        }
+        };
         /**
          *  Insert a document in the collection.
          *
@@ -94,18 +98,18 @@ export var MongoObservable;
          *
          * @see {@link https://docs.meteor.com/api/collections.html#Mongo-Collection-insert|insert on Meteor documentation}
          */
-        insert(doc) {
-            let observers = [];
-            let obs = this._createObservable(observers);
-            this._collection.insert(doc, (error, docId) => {
-                observers.forEach(observer => {
+        Collection.prototype.insert = function (doc) {
+            var observers = [];
+            var obs = this._createObservable(observers);
+            this._collection.insert(doc, function (error, docId) {
+                observers.forEach(function (observer) {
                     error ? observer.error(error) :
                         observer.next(docId);
                     observer.complete();
                 });
             });
             return obs;
-        }
+        };
         /**
          *  Remove documents from the collection.
          *
@@ -114,18 +118,18 @@ export var MongoObservable;
          *
          * @see {@link https://docs.meteor.com/api/collections.html#Mongo-Collection-remove|remove on Meteor documentation}
          */
-        remove(selector) {
-            let observers = [];
-            let obs = this._createObservable(observers);
-            this._collection.remove(selector, (error, removed) => {
-                observers.forEach(observer => {
+        Collection.prototype.remove = function (selector) {
+            var observers = [];
+            var obs = this._createObservable(observers);
+            this._collection.remove(selector, function (error, removed) {
+                observers.forEach(function (observer) {
                     error ? observer.error(error) :
                         observer.next(removed);
                     observer.complete();
                 });
             });
             return obs;
-        }
+        };
         /**
          *  Modify one or more documents in the collection.
          *
@@ -137,18 +141,18 @@ export var MongoObservable;
          *
          * @see {@link https://docs.meteor.com/api/collections.html#Mongo-Collection-update|update on Meteor documentation}
          */
-        update(selector, modifier, options) {
-            let observers = [];
-            let obs = this._createObservable(observers);
-            this._collection.update(selector, modifier, options, (error, updated) => {
-                observers.forEach(observer => {
+        Collection.prototype.update = function (selector, modifier, options) {
+            var observers = [];
+            var obs = this._createObservable(observers);
+            this._collection.update(selector, modifier, options, function (error, updated) {
+                observers.forEach(function (observer) {
                     error ? observer.error(error) :
                         observer.next(updated);
                     observer.complete();
                 });
             });
             return obs;
-        }
+        };
         /**
          *  Finds the first document that matches the selector, as ordered by sort and skip options.
          *
@@ -161,18 +165,18 @@ export var MongoObservable;
          *
          * @see {@link https://docs.meteor.com/api/collections.html#Mongo-Collection-upsert|upsert on Meteor documentation}
          */
-        upsert(selector, modifier, options) {
-            let observers = [];
-            let obs = this._createObservable(observers);
-            this._collection.upsert(selector, modifier, options, (error, affected) => {
-                observers.forEach(observer => {
+        Collection.prototype.upsert = function (selector, modifier, options) {
+            var observers = [];
+            var obs = this._createObservable(observers);
+            this._collection.upsert(selector, modifier, options, function (error, affected) {
+                observers.forEach(function (observer) {
                     error ? observer.error(error) :
                         observer.next(affected);
                     observer.complete();
                 });
             });
             return obs;
-        }
+        };
         /**
          *  Method has the same notation as Mongo.Collection.find, only returns Observable.
          *
@@ -192,10 +196,10 @@ export var MongoObservable;
          *
          * @see {@link https://docs.meteor.com/api/collections.html#Mongo-Collection-find|find on Meteor documentation}
          */
-        find(selector, options) {
-            const cursor = this._collection.find.apply(this._collection, arguments);
+        Collection.prototype.find = function (selector, options) {
+            var cursor = this._collection.find.apply(this._collection, arguments);
             return ObservableCursor.create(cursor);
-        }
+        };
         /**
          *  Finds the first document that matches the selector, as ordered by sort and skip options.
          *
@@ -205,18 +209,19 @@ export var MongoObservable;
          *
          * @see {@link https://docs.meteor.com/api/collections.html#Mongo-Collection-findOne|findOne on Meteor documentation}
          */
-        findOne(selector, options) {
+        Collection.prototype.findOne = function (selector, options) {
             return this._collection.findOne.apply(this._collection, arguments);
-        }
-        _createObservable(observers) {
-            return Observable.create((observer) => {
+        };
+        Collection.prototype._createObservable = function (observers) {
+            return Observable.create(function (observer) {
                 observers.push(observer);
-                return () => {
+                return function () {
                     removeObserver(observers, observer);
                 };
             });
-        }
-    }
+        };
+        return Collection;
+    }());
     MongoObservable.Collection = Collection;
 })(MongoObservable || (MongoObservable = {}));
 /**

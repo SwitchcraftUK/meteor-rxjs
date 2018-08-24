@@ -1,30 +1,30 @@
-export const subscribeEvents = ['onReady', 'onError', 'onStop'];
-const isFunction = (func) => typeof func === 'function';
+export var subscribeEvents = ['onReady', 'onError', 'onStop'];
+var isFunction = function (func) { return typeof func === 'function'; };
 export function isMeteorCallbacks(callbacks) {
     return isFunction(callbacks) || isCallbacksObject(callbacks);
 }
 // Checks if callbacks of {@link CallbacksObject} type.
 export function isCallbacksObject(callbacks) {
-    return callbacks && subscribeEvents.some((event) => {
+    return callbacks && subscribeEvents.some(function (event) {
         return isFunction(callbacks[event]);
     });
 }
-export const g = typeof global === 'object' ? global :
+export var g = typeof global === 'object' ? global :
     typeof window === 'object' ? window :
         typeof self === 'object' ? self : undefined;
-const METEOR_RXJS_ZONE = 'meteor-rxjs-zone';
-const fakeZone = {
+var METEOR_RXJS_ZONE = 'meteor-rxjs-zone';
+var fakeZone = {
     name: METEOR_RXJS_ZONE,
-    run(func) {
+    run: function (func) {
         return func();
     },
-    fork(spec) {
+    fork: function (spec) {
         return fakeZone;
     }
 };
 export function forkZone() {
     if (g.Zone) {
-        let zone = g.Zone.current;
+        var zone = g.Zone.current;
         if (zone.name === METEOR_RXJS_ZONE) {
             zone = zone.parent || fakeZone;
         }
@@ -34,7 +34,7 @@ export function forkZone() {
 }
 export function getZone() {
     if (g.Zone) {
-        let zone = g.Zone.current;
+        var zone = g.Zone.current;
         if (zone.name === METEOR_RXJS_ZONE) {
             return zone.parent;
         }
@@ -42,11 +42,11 @@ export function getZone() {
     }
 }
 export function removeObserver(observers, observer, onEmpty) {
-    let index = observers.indexOf(observer);
+    var index = observers.indexOf(observer);
     observers.splice(index, 1);
     if (observers.length === 0 && onEmpty) {
         onEmpty();
     }
 }
-export const gZone = g.Zone ? g.Zone.current : fakeZone;
+export var gZone = g.Zone ? g.Zone.current : fakeZone;
 //# sourceMappingURL=utils.js.map
